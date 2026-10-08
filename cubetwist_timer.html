@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CubeTwist Timer - Modern Speedcubing Platform</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cubeRed: '#ef4444',
+                        cubeGreen: '#22c55e',
+                        cubeBlue: '#3b82f6',
+                        cubeYellow: '#eab308',
+                        cubeOrange: '#f97316',
+                        cubeWhite: '#f8fafc',
+                        darkBg: '#0b0f19',
+                        cardBg: '#151d30',
+                        borderBg: '#222f47'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Confetti JS -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #080c14;
+            color: #f1f5f9;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080c14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        .timer-holding {
+            color: #ef4444 !important;
+            text-shadow: 0 0 35px rgba(239, 68, 68, 0.6);
+        }
+        .timer-ready {
+            color: #22c55e !important;
+            text-shadow: 0 0 45px rgba(34, 197, 94, 0.8);
+        }
+        .timer-running {
+            color: #38bdf8 !important;
+            text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+        }
+
+        /* Melting logo animation */
+        @keyframes liquidDrip {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-2px) scale(1.02); }
+        }
+        .drip-animate {
+            animation: liquidDrip 3.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <!-- TOP NAVIGATION NAVBAR -->
+    <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            
+            <!-- LOGO BRANDING WITH MELTING RUBIK'S CUBE -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('timer')">
+                <div class="relative w-10 h-10 drip-animate flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" class="w-full h-full filter drop-shadow-[0_4px_10px_rgba(59,130,246,0.3)]">
+                        <polygon points="50,15 85,32 50,50 15,32" fill="#3b82f6"/>
+                        <polygon points="15,32 50,50 50,82 15,64" fill="#ef4444"/>
+                        <polygon points="50,50 85,32 85,64 50,82" fill="#eab308"/>
+                        <line x1="50" y1="15" x2="50" y2="82" stroke="#080c14" stroke-width="2.5"/>
+                        <line x1="15" y1="32" x2="85" y2="32" stroke="#080c14" stroke-width="2.5"/>
+                        <line x1="15" y1="64" x2="85" y2="64" stroke="#080c14" stroke-width="2.5"/>
+                        <line x1="32.5" y1="23.5" x2="67.5" y2="41" stroke="#080c14" stroke-width="2"/>
+                        <line x1="67.5" y1="23.5" x2="32.5" y2="41" stroke="#080c14" stroke-width="2"/>
+                        <path d="M 10 75 Q 20 95 35 82 Q 45 98 60 84 Q 75 96 90 76 Q 80 68 50 80 Q 20 68 10 75 Z" fill="#22c55e" opacity="0.9"/>
+                        <path d="M 18 80 Q 30 98 42 84 Q 58 100 70 82 Q 82 92 88 80 Q 60 75 18 80 Z" fill="#f97316" opacity="0.8"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-indigo-300 to-rose-400 bg-clip-text text-transparent">
+                        CubeTwist <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-semibold">PRO</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-medium tracking-wide">SPEEDCUBING TIMER & COMMUNITY</p>
+                </div>
+            </div>
+
+            <!-- TABS NAVIGATION -->
+            <nav class="hidden md:flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80">
+                <button id="nav-timer" onclick="switchTab('timer')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 bg-indigo-600 text-white shadow-md">
+                    <i class="fa-solid fa-stopwatch"></i> Timer
+                </button>
+                <button id="nav-sessions" onclick="switchTab('sessions')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-folder-open"></i> Sessions
+                </button>
+                <button id="nav-analytics" onclick="switchTab('analytics')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-chart-column"></i> Analytics
+                </button>
+                <button id="nav-battle" onclick="switchTab('battle')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-swords"></i> Battles <span class="px-1.5 py-0.2 text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-md font-bold">LIVE</span>
+                </button>
+                <button id="nav-friends" onclick="switchTab('friends')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-users"></i> Friends
+                </button>
+                <button id="nav-hardware" onclick="switchTab('hardware')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-plug"></i> Hardware
+                </button>
+            </nav>
+
+            <!-- USER ACCOUNT & PROFILE CONTROLS -->
+            <div class="flex items-center gap-3">
+                <div id="auth-status-container" class="flex items-center gap-2">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- MOBILE NAV BAR -->
+        <div class="flex md:hidden justify-around mt-2 pt-2 border-t border-slate-800/80 text-xs">
+            <button onclick="switchTab('timer')" class="flex flex-col items-center gap-1 text-cyan-400"><i class="fa-solid fa-stopwatch text-base"></i>Timer</button>
+            <button onclick="switchTab('sessions')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa-solid fa-folder-open text-base"></i>Sessions</button>
+            <button onclick="switchTab('analytics')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa-solid fa-chart-column text-base"></i>Stats</button>
+            <button onclick="switchTab('battle')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa-solid fa-swords text-base"></i>Battle</button>
+            <button onclick="switchTab('friends')" class="flex flex-col items-center gap-1 text-slate-400"><i class="fa-solid fa-users text-base"></i>Friends</button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-grow flex flex-col justify-center">
+
+        <!-- TAB 1: TIMER SCREEN -->
+        <section id="tab-timer" class="tab-content flex flex-col gap-6">
+            
+            <!-- SCRAMBLE SELECTION & TOOLBAR -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur flex flex-col lg:flex-row items-center justify-between gap-4">
+                
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <!-- Session Selector Dropdown -->
+                    <div class="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-amber-500/30">
+                        <i class="fa-solid fa-folder-open text-amber-400 text-sm"></i>
+                        <div class="flex flex-col">
+                            <span class="text-[9px] uppercase font-bold text-amber-400/80 tracking-wider">Active Session</span>
+                            <select id="session-select" onchange="changeActiveSession(this.value)" class="bg-transparent text-sm font-bold text-white outline-none cursor-pointer">
+                                <!-- Dynamically populated -->
+                            </select>
+                        </div>
+                        <button onclick="createNewSessionPrompt()" title="Create New Session" class="ml-1 px-2 py-1 bg-slate-900 hover:bg-amber-500/20 text-amber-400 rounded-lg text-xs font-bold border border-amber-500/30 active:scale-95 transition">
+                            +
+                        </button>
+                    </div>
+
+                    <!-- Puzzle Selector -->
+                    <div class="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-cube text-cyan-400 text-sm"></i>
+                        <select id="puzzle-select" onchange="handlePuzzleChange(this.value)" class="bg-transparent text-sm font-bold text-white outline-none cursor-pointer">
+                            <option value="3x3" class="bg-slate-900">3x3x3 Rubik's Cube</option>
+                            <option value="2x2" class="bg-slate-900">2x2x2 Pocket Cube</option>
+                            <option value="4x4" class="bg-slate-900">4x4x4 Revenge</option>
+                            <option value="pyra" class="bg-slate-900">Pyraminx</option>
+                            <option value="skewb" class="bg-slate-900">Skewb</option>
+                            <option value="mega" class="bg-slate-900">Megaminx</option>
+                        </select>
+                    </div>
+
+                    <!-- Scramble Length Selector -->
+                    <div class="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-gauge-high text-indigo-400 text-sm"></i>
+                        <select id="difficulty-select" onchange="generateScramble()" class="bg-transparent text-sm font-semibold text-slate-200 outline-none cursor-pointer">
+                            <option value="normal" selected class="bg-slate-900">Standard WCA (Hard Scramble - 30 Moves)</option>
+                            <option value="hard" class="bg-slate-900">Extreme Scramble (38+ Moves)</option>
+                            <option value="easy" class="bg-slate-900">Short / Quick (14 Moves)</option>
+                        </select>
+                    </div>
+
+                    <!-- Inspection Toggle -->
+                    <label class="flex items-center gap-2 cursor-pointer bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300">
+                        <input type="checkbox" id="inspection-toggle" class="accent-indigo-500 rounded cursor-pointer">
+                        <span>15s Inspection</span>
+                    </label>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+                    <button onclick="copyScramble()" title="Copy Scramble" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-slate-300 rounded-xl text-xs font-medium border border-slate-700 flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Copy</span>
+                    </button>
+                    <button onclick="generateScramble()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Next Scramble
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCRAMBLE DISPLAY BOX -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 text-center shadow-inner relative group min-h-[100px] flex flex-col justify-center items-center">
+                <p id="scramble-display" class="mono-font text-lg md:text-2xl font-semibold tracking-wider text-slate-200 leading-relaxed max-w-4xl">
+                    Generating scramble...
+                </p>
+            </div>
+
+            <!-- MAIN TIMER DISPLAY AREA -->
+            <div id="timer-trigger-area" class="py-12 my-2 flex flex-col items-center justify-center cursor-pointer select-none rounded-3xl transition duration-300 bg-slate-900/30 border border-slate-800/40 hover:border-slate-700/60 relative overflow-hidden">
+                <div id="timer-status-badge" class="mb-4 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-slate-800 text-slate-400 border border-slate-700">
+                    Press & Hold Space or Touch
+                </div>
+                <div id="timer-display" class="mono-font text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tighter text-slate-100 transition-colors duration-150">
+                    0.00
+                </div>
+                <div id="penalty-bar" class="mt-8 flex items-center gap-3 opacity-0 transition-opacity duration-200">
+                    <button id="penalty-plus2" onclick="applyPenalty('+2')" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 active:scale-95 transition">
+                        +2 sec
+                    </button>
+                    <button id="penalty-dnf" onclick="applyPenalty('DNF')" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 active:scale-95 transition">
+                        DNF
+                    </button>
+                    <button onclick="deleteLastSolve()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700 active:scale-95 transition">
+                        <i class="fa-solid fa-trash-can"></i> Delete
+                    </button>
+                </div>
+            </div>
+
+            <!-- QUICK SESSION STATS BAR -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Session Solves</p>
+                    <p id="stat-count" class="mono-font text-xl font-bold text-slate-100 mt-1">0</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Session Best</p>
+                    <p id="stat-best" class="mono-font text-xl font-bold text-cyan-400 mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Current AO5</p>
+                    <p id="stat-ao5" class="mono-font text-xl font-bold text-emerald-400 mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Current AO12</p>
+                    <p id="stat-ao12" class="mono-font text-xl font-bold text-indigo-400 mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-center col-span-2 md:col-span-1">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Session Mean</p>
+                    <p id="stat-mean" class="mono-font text-xl font-bold text-slate-300 mt-1">--</p>
+                </div>
+            </div>
+
+            <!-- RECENT SOLVES LIST FOR THIS SESSION -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> Active Session Solves
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <button onclick="renameActiveSessionPrompt()" class="text-xs text-amber-400 hover:text-amber-300 font-semibold">
+                            Rename Session
+                        </button>
+                        <button onclick="clearCurrentSessionPrompt()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">
+                            Clear This Session
+                        </button>
+                    </div>
+                </div>
+                <div id="recent-solves-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
+                    <span class="text-xs text-slate-500 italic">No solves recorded yet in this session.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SESSIONS MANAGER TAB -->
+        <section id="tab-sessions" class="tab-content hidden flex-col gap-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-folder-tree text-amber-400"></i> Session Management Center
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Organize your cubing practice! Keeps scrambles and stats completely separated by puzzle and session.</p>
+                    </div>
+                    <button onclick="createNewSessionPrompt()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-lg active:scale-95 transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Create New Session
+                    </button>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="sessions-card-grid">
+                    <!-- Dynamic session cards injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ANALYTICS & STATS SCREEN -->
+        <section id="tab-analytics" class="tab-content hidden flex-col gap-6">
+            <div class="flex items-center justify-between bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-filter text-cyan-400"></i>
+                    <span class="text-xs font-bold text-slate-300">Analytics View:</span>
+                </div>
+                <select id="analytics-session-filter" onchange="renderAnalyticsView(this.value)" class="bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 px-3 py-1.5 rounded-xl outline-none">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <p class="text-xs font-medium text-slate-400">Best AO50</p>
+                    <p id="ana-ao50" class="mono-font text-2xl font-bold text-amber-400 mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <p class="text-xs font-medium text-slate-400">Standard Deviation</p>
+                    <p id="ana-stddev" class="mono-font text-2xl font-bold text-slate-200 mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <p class="text-xs font-medium text-slate-400">Worst Time</p>
+                    <p id="ana-worst" class="mono-font text-2xl font-bold text-rose-400 mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+                    <p class="text-xs font-medium text-slate-400">Total Solve Time</p>
+                    <p id="ana-total-time" class="mono-font text-2xl font-bold text-indigo-400 mt-1">--</p>
+                </div>
+            </div>
+
+            <!-- Solve Chart -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-cyan-400"></i> Solve Progression Graph
+                </h3>
+                <div class="h-64 sm:h-80 w-full">
+                    <canvas id="solveChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Solves History Table -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 overflow-hidden">
+                <h3 class="text-sm font-bold text-slate-200 mb-4">Complete Solve History</h3>
+                <div class="overflow-x-auto max-h-80">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">#</th>
+                                <th class="p-3">Time</th>
+                                <th class="p-3">AO5</th>
+                                <th class="p-3">AO12</th>
+                                <th class="p-3">Puzzle</th>
+                                <th class="p-3">Session</th>
+                                <th class="p-3">Scramble</th>
+                                <th class="p-3">Date</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="solves-table-body" class="divide-y divide-slate-800/60 mono-font">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: MULTIPLAYER BATTLES -->
+        <section id="tab-battle" class="tab-content hidden flex-col gap-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-swords text-rose-500"></i> Speedcubing Battle Arena
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Challenge friends in synchronized real-time 1v1 duels or 4v4 custom room battles.</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button onclick="createBattleRoom('1v1')" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg active:scale-95 transition flex items-center gap-2">
+                            <i class="fa-solid fa-bolt"></i> Create 1v1 Room
+                        </button>
+                        <button onclick="createBattleRoom('4v4')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg active:scale-95 transition flex items-center gap-2">
+                            <i class="fa-solid fa-users-gear"></i> Create 4v4 Custom Lobby
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col sm:flex-row items-center gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <input id="room-code-input" type="text" placeholder="ENTER 6-LETTER ROOM CODE (e.g. CUBE88)" class="bg-slate-900 border border-slate-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-rose-500 w-full sm:w-80">
+                    <button onclick="joinBattleRoom()" class="w-full sm:w-auto px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold border border-slate-700 active:scale-95 transition">
+                        Join Battle Room
+                    </button>
+                </div>
+
+                <div id="battle-room-active" class="mt-6 hidden flex-col gap-6 bg-slate-950 border border-slate-800 rounded-2xl p-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <span id="battle-room-mode-badge" class="px-2.5 py-1 bg-rose-500/20 text-rose-400 text-xs font-bold rounded-md uppercase border border-rose-500/30">
+                                1v1 DUEL
+                            </span>
+                            <span class="ml-3 text-xs text-slate-400 font-mono">CODE: <strong id="battle-room-id-text" class="text-cyan-400 text-sm">------</strong></span>
+                        </div>
+                        <button onclick="leaveBattleRoom()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">
+                            Leave Room
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 p-4 rounded-xl text-center border border-slate-800">
+                        <p class="text-[10px] uppercase font-bold text-slate-500 mb-1">Shared Round Scramble</p>
+                        <p id="battle-scramble-text" class="mono-font text-sm sm:text-base text-slate-200 font-medium">Generating room scramble...</p>
+                    </div>
+
+                    <div id="battle-players-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    </div>
+
+                    <div class="flex items-center justify-center gap-4 pt-4 border-t border-slate-800">
+                        <button onclick="readyUpBattle()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-lg active:scale-95 transition">
+                            <i class="fa-solid fa-check"></i> I'm Ready to Solve
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: FRIENDS -->
+        <section id="tab-friends" class="tab-content hidden flex-col gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 md:col-span-1">
+                    <h3 class="text-base font-bold text-slate-100 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-indigo-400"></i> Add Cubing Friend
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Enter your friend's User ID or Email address.</p>
+
+                    <div class="space-y-3">
+                        <input id="friend-id-input" type="text" placeholder="Friend's User ID or Email" class="w-full bg-slate-950 border border-slate-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button onclick="sendFriendRequest()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold active:scale-95 transition">
+                            Send Request
+                        </button>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-800">
+                        <p class="text-[11px] text-slate-400">Your Shareable User ID:</p>
+                        <div class="flex items-center justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 mt-1">
+                            <code id="my-user-id-code" class="text-xs text-cyan-400 mono-font font-bold">Local User</code>
+                            <button onclick="copyMyUserId()" class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded-md">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 md:col-span-2">
+                    <h3 class="text-base font-bold text-slate-100 mb-4 flex items-center justify-between">
+                        <span><i class="fa-solid fa-users text-cyan-400"></i> Your Friends List</span>
+                        <span id="friends-count-badge" class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full">0 Friends</span>
+                    </h3>
+
+                    <div id="friends-list-container" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        <div class="text-center py-8 text-slate-500 text-xs">
+                            No friends added yet. Share your ID or add friends to see their personal bests!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: HARDWARE & IMPORT -->
+        <section id="tab-hardware" class="tab-content hidden flex-col gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-base font-bold text-slate-100 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-file-import text-amber-400"></i> Import Previous Solves
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Import solve backups directly from <strong>csTimer</strong> (JSON format) or <strong>Twisty Timer</strong> (CSV/TXT format).</p>
+
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-2xl p-6 text-center cursor-pointer bg-slate-950/50 transition">
+                            <input type="file" id="import-file-input" accept=".json,.csv,.txt" onchange="handleFileImport(event)" class="hidden">
+                            <label for="import-file-input" class="cursor-pointer flex flex-col items-center">
+                                <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-400 mb-2"></i>
+                                <span class="text-xs font-bold text-slate-200">Click to upload csTimer JSON or Twisty Timer CSV</span>
+                                <span class="text-[10px] text-slate-500 mt-1">Supports standard timer export formats</span>
+                            </label>
+                        </div>
+
+                        <div class="pt-2">
+                            <p class="text-xs font-bold text-slate-400 mb-1">Or Paste Raw Backup Data:</p>
+                            <textarea id="import-text-area" placeholder="Paste csTimer JSON or Twisty Timer text here..." class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs mono-font text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                            <button onclick="handleTextImport()" class="mt-2 w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold active:scale-95 transition">
+                                Parse & Merge Solves
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-base font-bold text-slate-100 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-bluetooth text-cyan-400"></i> Hardware Connections
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-4">Connect external hardware timer devices for official tournament practice.</p>
+
+                    <div class="space-y-4">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                                    <i class="fa-solid fa-cube"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-200">Bluetooth Smart Cube</h4>
+                                    <p class="text-[10px] text-slate-400">GAN, GoCube, Giiker WebBluetooth sync</p>
+                                </div>
+                            </div>
+                            <button onclick="connectBluetoothCube()" class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold active:scale-95 transition">
+                                Connect
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                    <i class="fa-solid fa-sliders"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-200">StackMat Timer (Audio Line-In)</h4>
+                                    <p class="text-[10px] text-slate-400">Listen via microphone input signal</p>
+                                </div>
+                            </div>
+                            <button onclick="toggleStackmatAudio()" id="stackmat-btn" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold active:scale-95 transition">
+                                Enable
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- AUTH MODAL (LOGIN / REGISTER) -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-2 mb-6 border-b border-slate-800 pb-3">
+                <button id="auth-tab-login" onclick="switchAuthTab('login')" class="text-base font-bold text-cyan-400 border-b-2 border-cyan-400 pb-2 px-2 transition">
+                    Log In
+                </button>
+                <button id="auth-tab-register" onclick="switchAuthTab('register')" class="text-base font-bold text-slate-400 hover:text-slate-200 pb-2 px-2 transition">
+                    Create CubeTwist Account
+                </button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="cubingpro@gmail.com" class="w-full bg-slate-950 border border-slate-800 text-white px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 text-white px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg active:scale-95 transition">
+                    Log In
+                </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Display Handle / Username</label>
+                    <input type="text" id="register-name" required placeholder="SpeedCuber99" class="w-full bg-slate-950 border border-slate-800 text-white px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Email Address</label>
+                    <input type="email" id="register-email" required placeholder="cubingpro@gmail.com" class="w-full bg-slate-950 border border-slate-800 text-white px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Password</label>
+                    <input type="password" id="register-password" minlength="4" required placeholder="Minimum 4 characters" class="w-full bg-slate-950 border border-slate-800 text-white px-3.5 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg active:scale-95 transition">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="mt-4 pt-3 border-t border-slate-800 text-center">
+                <button onclick="closeAuthModal()" class="text-xs text-slate-400 hover:text-slate-200 underline">
+                    Continue as Guest
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- FIREBASE AND STANDALONE LOCAL ACCOUNT SYSTEM -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase and Local Storage State
+        window.currentUser = null;
+        window.userSolves = JSON.parse(localStorage.getItem('cubetwist_solves') || '[]');
+        window.currentScramble = "";
+        window.chartInstance = null;
+
+        // Local User Account Manager for Netlify static deployments
+        window.getLocalUsers = () => JSON.parse(localStorage.getItem('cubetwist_users') || '{}');
+        window.saveLocalUsers = (users) => localStorage.setItem('cubetwist_users', JSON.stringify(users));
+
+        // Load active local session user
+        const activeLocalSession = JSON.parse(localStorage.getItem('cubetwist_active_user') || 'null');
+        if (activeLocalSession) {
+            window.currentUser = activeLocalSession;
+        }
+
+        let auth, db;
+        try {
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                apiKey: "demo-api-key",
+                authDomain: "demo.firebaseapp.com",
+                projectId: "demo-project"
+            };
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            onAuthStateChanged(auth, (user) => {
+                if (user && !window.currentUser) {
+                    window.currentUser = { uid: user.uid, email: user.email || 'guest@cubetwist.local', isAnonymous: user.isAnonymous };
+                }
+                updateAuthUI();
+            });
+        } catch (e) {
+            console.log("Running in Local Netlify Mode");
+        }
+
+        window.authObj = auth;
+
+        // Custom Safe Register Handler
+        window.registerUserAccount = async (name, email, pass) => {
+            let userObj = null;
+
+            if (auth) {
+                try {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    userObj = { uid: res.user.uid, email: res.user.email, name: name };
+                } catch (err) {
+                    console.warn("Firebase Auth bypassed, creating local account:", err.message);
+                }
+            }
+
+            if (!userObj) {
+                const users = window.getLocalUsers();
+                const userId = 'CUBE-' + Math.floor(100000 + Math.random() * 900000);
+                userObj = { uid: userId, email: email, name: name, pass: pass };
+                users[email] = userObj;
+                window.saveLocalUsers(users);
+            }
+
+            window.currentUser = userObj;
+            localStorage.setItem('cubetwist_active_user', JSON.stringify(userObj));
+            updateAuthUI();
+            return userObj;
+        };
+
+        // Custom Safe Login Handler
+        window.loginUserAccount = async (email, pass) => {
+            let userObj = null;
+
+            if (auth) {
+                try {
+                    const res = await signInWithEmailAndPassword(auth, email, pass);
+                    userObj = { uid: res.user.uid, email: res.user.email };
+                } catch (err) {
+                    console.warn("Firebase Login fallback to local storage:", err.message);
+                }
+            }
+
+            if (!userObj) {
+                const users = window.getLocalUsers();
+                if (users[email] && users[email].pass === pass) {
+                    userObj = users[email];
+                } else if (users[email]) {
+                    throw new Error("Incorrect password for local account");
+                } else {
+                    userObj = { uid: 'CUBE-' + Math.floor(100000 + Math.random() * 900000), email: email, name: email.split('@')[0] };
+                    users[email] = userObj;
+                    window.saveLocalUsers(users);
+                }
+            }
+
+            window.currentUser = userObj;
+            localStorage.setItem('cubetwist_active_user', JSON.stringify(userObj));
+            updateAuthUI();
+            return userObj;
+        };
+
+        window.logoutUserAccount = async () => {
+            if (auth) {
+                try { await signOut(auth); } catch (e) {}
+            }
+            window.currentUser = null;
+            localStorage.removeItem('cubetwist_active_user');
+            updateAuthUI();
+        };
+
+        window.updateAuthUI = function() {
+            const container = document.getElementById('auth-status-container');
+            const myUserIdCode = document.getElementById('my-user-id-code');
+
+            if (myUserIdCode) {
+                myUserIdCode.innerText = window.currentUser ? window.currentUser.uid : 'Guest-Mode';
+            }
+
+            if (container) {
+                if (window.currentUser) {
+                    const displayName = window.currentUser.name || (window.currentUser.email ? window.currentUser.email.split('@')[0] : 'Cuber');
+                    container.innerHTML = `
+                        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                            <div class="w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center text-[10px] font-bold text-black uppercase">
+                                ${displayName[0]}
+                            </div>
+                            <span class="text-xs font-bold text-slate-200 hidden sm:inline">${displayName}</span>
+                            <button onclick="handleLogout()" class="text-xs text-rose-400 hover:text-rose-300 ml-1" title="Log Out">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <button onclick="openAuthModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-lock"></i> Log In / Register
+                        </button>
+                    `;
+                }
+            }
+        };
+
+        setTimeout(() => window.updateAuthUI(), 100);
+    </script>
+
+    <!-- SESSION MANAGEMENT, TIMER LOGIC AND CONTROLS -->
+    <script>
+        // AUDIO FEEDBACK SYSTEM
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        // --- SESSION MANAGER SYSTEM ---
+        window.sessions = JSON.parse(localStorage.getItem('cubetwist_sessions') || 'null');
+        if (!window.sessions || !Array.isArray(window.sessions) || window.sessions.length === 0) {
+            window.sessions = [
+                { id: 'sess_3x3_default', name: '3x3x3 Main', puzzle: '3x3' },
+                { id: 'sess_2x2_default', name: '2x2x2 Main', puzzle: '2x2' },
+                { id: 'sess_4x4_default', name: '4x4x4 Main', puzzle: '4x4' },
+                { id: 'sess_pyra_default', name: 'Pyraminx Main', puzzle: 'pyra' },
+                { id: 'sess_skewb_default', name: 'Skewb Main', puzzle: 'skewb' },
+                { id: 'sess_mega_default', name: 'Megaminx Main', puzzle: 'mega' }
+            ];
+            localStorage.setItem('cubetwist_sessions', JSON.stringify(window.sessions));
+        }
+
+        window.activeSessionId = localStorage.getItem('cubetwist_active_session') || window.sessions[0].id;
+
+        function saveSessionsToStorage() {
+            localStorage.setItem('cubetwist_sessions', JSON.stringify(window.sessions));
+            localStorage.setItem('cubetwist_active_session', window.activeSessionId);
+        }
+
+        function getActiveSession() {
+            return window.sessions.find(s => s.id === window.activeSessionId) || window.sessions[0];
+        }
+
+        function renderSessionOptions() {
+            const selectEl = document.getElementById('session-select');
+            const analyticsFilterEl = document.getElementById('analytics-session-filter');
+            if (!selectEl) return;
+
+            selectEl.innerHTML = window.sessions.map(s => `
+                <option value="${s.id}" ${s.id === window.activeSessionId ? 'selected' : ''} class="bg-slate-900 text-white font-bold">
+                    ${s.name} (${s.puzzle})
+                </option>
+            `).join('');
+
+            if (analyticsFilterEl) {
+                analyticsFilterEl.innerHTML = `
+                    <option value="ACTIVE" class="bg-slate-900">Current Session: ${getActiveSession().name}</option>
+                    <option value="ALL" class="bg-slate-900">All Solves (Combined)</option>
+                    ${window.sessions.map(s => `<option value="${s.id}" class="bg-slate-900">${s.name} (${s.puzzle})</option>`).join('')}
+                `;
+            }
+
+            renderSessionCardsGrid();
+        }
+
+        function changeActiveSession(sessionId) {
+            window.activeSessionId = sessionId;
+            saveSessionsToStorage();
+            
+            const active = getActiveSession();
+            
+            // Sync puzzle dropdown with active session's designated puzzle type
+            const puzzleSelect = document.getElementById('puzzle-select');
+            if (puzzleSelect && active.puzzle && puzzleSelect.value !== active.puzzle) {
+                puzzleSelect.value = active.puzzle;
+            }
+
+            generateScramble();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            renderSessionOptions();
+            showToast(`Switched to session: ${active.name}`, "info");
+        }
+
+        function handlePuzzleChange(puzzleVal) {
+            // Find if there is an existing session for this puzzle
+            let matchingSession = window.sessions.find(s => s.id === window.activeSessionId && s.puzzle === puzzleVal);
+            if (!matchingSession) {
+                matchingSession = window.sessions.find(s => s.puzzle === puzzleVal);
+            }
+
+            if (matchingSession) {
+                window.activeSessionId = matchingSession.id;
+            } else {
+                // Auto create puzzle main session
+                const newSess = {
+                    id: 'sess_' + puzzleVal + '_' + Date.now(),
+                    name: `${puzzleVal} Practice`,
+                    puzzle: puzzleVal
+                };
+                window.sessions.push(newSess);
+                window.activeSessionId = newSess.id;
+            }
+
+            saveSessionsToStorage();
+            renderSessionOptions();
+            generateScramble();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+        }
+
+        function createNewSessionPrompt() {
+            const currentPuzzle = document.getElementById('puzzle-select')?.value || '3x3';
+            const name = prompt(`Enter name for new ${currentPuzzle} session:`, `${currentPuzzle} Session ${window.sessions.length + 1}`);
+            if (!name) return;
+
+            const newSession = {
+                id: 'sess_' + Date.now(),
+                name: name.trim(),
+                puzzle: currentPuzzle
+            };
+
+            window.sessions.push(newSession);
+            window.activeSessionId = newSession.id;
+            saveSessionsToStorage();
+            renderSessionOptions();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            showToast(`Session "${name}" created!`, "success");
+        }
+
+        function renameActiveSessionPrompt() {
+            const active = getActiveSession();
+            const newName = prompt(`Rename session "${active.name}":`, active.name);
+            if (!newName || !newName.trim()) return;
+
+            active.name = newName.trim();
+            saveSessionsToStorage();
+            renderSessionOptions();
+            showToast("Session renamed!", "success");
+        }
+
+        function deleteSessionById(sessId) {
+            if (window.sessions.length <= 1) {
+                showToast("Cannot delete the only session!", "error");
+                return;
+            }
+            const sess = window.sessions.find(s => s.id === sessId);
+            if (!confirm(`Are you sure you want to delete session "${sess?.name}"? Its solves will remain saved in total history.`)) return;
+
+            window.sessions = window.sessions.filter(s => s.id !== sessId);
+            if (window.activeSessionId === sessId) {
+                window.activeSessionId = window.sessions[0].id;
+            }
+            saveSessionsToStorage();
+            renderSessionOptions();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            showToast("Session deleted", "info");
+        }
+
+        function clearCurrentSessionPrompt() {
+            const activeSolves = getActiveSessionSolves();
+            if (activeSolves.length === 0) {
+                showToast("Current session is already empty");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to clear all ${activeSolves.length} solve(s) from "${getActiveSession().name}"?`)) return;
+
+            window.userSolves = (window.userSolves || []).filter(s => s.sessionId !== window.activeSessionId);
+            saveSolvesToStorage();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            showToast("Current session cleared", "info");
+        }
+
+        function renderSessionCardsGrid() {
+            const grid = document.getElementById('sessions-card-grid');
+            if (!grid) return;
+
+            const solves = window.userSolves || [];
+
+            grid.innerHTML = window.sessions.map(s => {
+                const sessSolves = solves.filter(sol => sol.sessionId === s.id || (!sol.sessionId && sol.puzzle === s.puzzle && s.id.includes('default')));
+                const best = sessSolves.length > 0 ? Math.min(...sessSolves.map(sol => sol.time)).toFixed(2) + 's' : '--';
+                const isActive = s.id === window.activeSessionId;
+
+                return `
+                    <div class="bg-slate-950 p-5 rounded-2xl border ${isActive ? 'border-amber-500 shadow-lg' : 'border-slate-800'} flex flex-col justify-between transition">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="px-2.5 py-0.5 text-[10px] uppercase font-extrabold rounded-md ${isActive ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-400'}">
+                                    ${isActive ? 'ACTIVE SESSION' : s.puzzle}
+                                </span>
+                                <span class="text-xs text-slate-400 font-bold">${sessSolves.length} Solves</span>
+                            </div>
+                            <h3 class="text-base font-bold text-white tracking-wide">${s.name}</h3>
+                            <p class="text-xs text-slate-400 mt-1">Best Single: <strong class="text-cyan-400">${best}</strong></p>
+                        </div>
+
+                        <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                            ${isActive ? `
+                                <span class="text-xs text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Currently Selected</span>
+                            ` : `
+                                <button onclick="changeActiveSession('${s.id}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold active:scale-95 transition">
+                                    Switch To
+                                </button>
+                            `}
+                            <button onclick="deleteSessionById('${s.id}')" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1" title="Delete Session">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getActiveSessionSolves() {
+            const active = getActiveSession();
+            return (window.userSolves || []).filter(s => {
+                if (s.sessionId) return s.sessionId === window.activeSessionId;
+                // Legacy fallback match
+                return s.puzzle === active.puzzle;
+            });
+        }
+
+        // TIMER STATE MACHINE
+        let timerState = 'STOPPED';
+        let startTime = 0;
+        let timerInterval = null;
+        let holdTimeout = null;
+        let inspectionInterval = null;
+        let inspectionTime = 15;
+        let lastSolveTime = 0;
+
+        function applyPenalty(penaltyType) {
+            const sessionSolves = getActiveSessionSolves();
+            if (sessionSolves.length === 0) return;
+            const lastSolve = sessionSolves[0];
+
+            if (penaltyType === '+2') {
+                if (lastSolve.penalty === '+2') {
+                    lastSolve.time -= 2;
+                    lastSolve.penalty = 'NONE';
+                } else {
+                    lastSolve.time += 2;
+                    lastSolve.penalty = '+2';
+                    showToast("+2 Penalty Applied (+2.00s)");
+                }
+            } else if (penaltyType === 'DNF') {
+                if (lastSolve.penalty === 'DNF') {
+                    lastSolve.penalty = 'NONE';
+                } else {
+                    lastSolve.penalty = 'DNF';
+                    showToast("Solve marked as DNF");
+                }
+            }
+            saveSolvesToStorage();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+        }
+
+        function deleteLastSolve() {
+            const activeSolves = getActiveSessionSolves();
+            if (activeSolves.length === 0) return;
+            const targetSolve = activeSolves[0];
+
+            window.userSolves = (window.userSolves || []).filter(s => s !== targetSolve);
+            saveSolvesToStorage();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            showToast("Last solve deleted");
+        }
+
+        function deleteSolveAt(index) {
+            const activeSolves = getActiveSessionSolves();
+            if (index < 0 || index >= activeSolves.length) return;
+            const target = activeSolves[index];
+
+            window.userSolves = (window.userSolves || []).filter(s => s !== target);
+            saveSolvesToStorage();
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            showToast("Solve removed");
+        }
+
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+            try {
+                await window.loginUserAccount(email, pass);
+                closeAuthModal();
+                showToast("Logged in successfully!", "success");
+            } catch (err) {
+                showToast("Login error: " + err.message, "error");
+            }
+        }
+
+        async function handleRegisterSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const pass = document.getElementById('register-password').value;
+            try {
+                await window.registerUserAccount(name, email, pass);
+                closeAuthModal();
+                showToast(`Account created! Welcome ${name}`, "success");
+            } catch (err) {
+                showToast("Registration error: " + err.message, "error");
+            }
+        }
+
+        async function handleLogout() {
+            await window.logoutUserAccount();
+            showToast("Logged out successfully");
+        }
+
+        let activeBattleRoom = null;
+
+        function createBattleRoom(mode) {
+            const roomCode = 'CUBE' + Math.floor(1000 + Math.random() * 9000);
+            activeBattleRoom = { id: roomCode, mode: mode, ready: false };
+            
+            document.getElementById('battle-room-active').classList.remove('hidden');
+            document.getElementById('battle-room-id-text').innerText = roomCode;
+            document.getElementById('battle-room-mode-badge').innerText = mode.toUpperCase() + ' BATTLE';
+            
+            generateBattleScramble();
+            renderBattlePlayers();
+            showToast(`Battle room ${roomCode} created!`, 'success');
+        }
+
+        function joinBattleRoom() {
+            const input = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (!input) {
+                showToast("Please enter a valid room code");
+                return;
+            }
+            activeBattleRoom = { id: input, mode: '1V1', ready: false };
+            document.getElementById('battle-room-active').classList.remove('hidden');
+            document.getElementById('battle-room-id-text').innerText = input;
+            generateBattleScramble();
+            renderBattlePlayers();
+            showToast(`Joined battle room ${input}`, 'success');
+        }
+
+        function leaveBattleRoom() {
+            activeBattleRoom = null;
+            document.getElementById('battle-room-active').classList.add('hidden');
+            showToast("Left battle room");
+        }
+
+        function generateBattleScramble() {
+            const scramble = generate3x3Scramble(30);
+            document.getElementById('battle-scramble-text').innerText = scramble;
+        }
+
+        function renderBattlePlayers() {
+            const grid = document.getElementById('battle-players-grid');
+            if (!grid) return;
+            const user = window.currentUser ? (window.currentUser.name || window.currentUser.email.split('@')[0]) : 'You';
+            const isReady = activeBattleRoom && activeBattleRoom.ready;
+            
+            grid.innerHTML = `
+                <div class="bg-slate-900 p-4 rounded-xl border border-indigo-500/40 flex flex-col items-center">
+                    <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm mb-2">
+                        ${user[0].toUpperCase()}
+                    </div>
+                    <span class="text-xs font-bold text-white">${user} (Host)</span>
+                    <span class="mt-2 text-[10px] px-2 py-0.5 rounded-full font-bold ${isReady ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
+                        ${isReady ? 'READY' : 'NOT READY'}
+                    </span>
+                </div>
+                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 border-dashed flex flex-col items-center justify-center text-slate-500 text-xs h-32">
+                    <i class="fa-solid fa-user-plus text-lg mb-1"></i>
+                    Waiting for opponent...
+                </div>
+            `;
+        }
+
+        function readyUpBattle() {
+            if (!activeBattleRoom) return;
+            activeBattleRoom.ready = !activeBattleRoom.ready;
+            renderBattlePlayers();
+            showToast(activeBattleRoom.ready ? "You are READY!" : "Status updated: Not Ready");
+        }
+
+        function sendFriendRequest() {
+            const input = document.getElementById('friend-id-input').value.trim();
+            if (!input) {
+                showToast("Please enter a User ID or Email");
+                return;
+            }
+            document.getElementById('friend-id-input').value = "";
+            showToast(`Friend request sent to ${input}!`, "success");
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseAndImportSolves(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function handleTextImport() {
+            const text = document.getElementById('import-text-area').value.trim();
+            if (!text) {
+                showToast("Please paste backup data first");
+                return;
+            }
+            parseAndImportSolves(text);
+        }
+
+        function parseAndImportSolves(rawText) {
+            let count = 0;
+            const activePuzzle = document.getElementById('puzzle-select')?.value || '3x3';
+            try {
+                if (rawText.startsWith('{') || rawText.startsWith('[')) {
+                    const data = JSON.parse(rawText);
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            if (typeof item === 'number') {
+                                saveSolveRecord({ time: item / 1000, penalty: 'NONE', puzzle: activePuzzle, timestamp: Date.now(), sessionId: window.activeSessionId });
+                                count++;
+                            }
+                        });
+                    } else if (data && typeof data === 'object') {
+                        Object.keys(data).forEach(key => {
+                            if (Array.isArray(data[key])) {
+                                data[key].forEach(s => {
+                                    if (Array.isArray(s) && typeof s[0] === 'number') {
+                                        saveSolveRecord({ time: s[0][1] / 1000, penalty: 'NONE', puzzle: activePuzzle, scramble: s[1] || '', timestamp: Date.now(), sessionId: window.activeSessionId });
+                                        count++;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                } else {
+                    const lines = rawText.split('\n');
+                    lines.forEach(line => {
+                        const match = line.match(/(\d+\.\d+)/);
+                        if (match) {
+                            const val = parseFloat(match[1]);
+                            if (!isNaN(val) && val > 0) {
+                                saveSolveRecord({ time: val, penalty: 'NONE', puzzle: activePuzzle, timestamp: Date.now(), sessionId: window.activeSessionId });
+                                count++;
+                            }
+                        }
+                    });
+                }
+                showToast(`Successfully imported ${count} solve(s) into current session!`, "success");
+            } catch (e) {
+                showToast("Error parsing import file format", "error");
+            }
+        }
+
+        async function connectBluetoothCube() {
+            if (!navigator.bluetooth) {
+                showToast("WebBluetooth is not supported in this browser");
+                return;
+            }
+            try {
+                showToast("Searching for Bluetooth Smart Cubes...");
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true
+                });
+                showToast(`Connected to ${device.name || 'Bluetooth Cube'}!`, "success");
+            } catch (err) {
+                showToast("Bluetooth connection cancelled or failed");
+            }
+        }
+
+        let stackmatActive = false;
+        function toggleStackmatAudio() {
+            const btn = document.getElementById('stackmat-btn');
+            if (!stackmatActive) {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast("Audio line-in not supported in this browser");
+                    return;
+                }
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
+                    stackmatActive = true;
+                    if (btn) {
+                        btn.innerText = "Disable";
+                        btn.className = "px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold active:scale-95 transition";
+                    }
+                    showToast("StackMat audio listener enabled!", "success");
+                }).catch(() => {
+                    showToast("Microphone permission denied");
+                });
+            } else {
+                stackmatActive = false;
+                if (btn) {
+                    btn.innerText = "Enable";
+                    btn.className = "px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold active:scale-95 transition";
+                }
+                showToast("StackMat audio listener disabled");
+            }
+        }
+
+        // SCRAMBLE GENERATORS
+        const FACES_3X3 = [
+            { name: 'U', axis: 0 }, { name: 'D', axis: 0 },
+            { name: 'L', axis: 1 }, { name: 'R', axis: 1 },
+            { name: 'F', axis: 2 }, { name: 'B', axis: 2 }
+        ];
+        const MODIFIERS = ['', "'", '2'];
+
+        function getScrambleLength(puzzle, difficulty) {
+            const mult = { easy: 0.5, normal: 1.0, hard: 1.35 }[difficulty] || 1.0;
+            const bases = { '3x3': 30, '2x2': 15, '4x4': 50, 'pyra': 15, 'skewb': 15, 'mega': 80 };
+            return Math.max(10, Math.round((bases[puzzle] || 30) * mult));
+        }
+
+        function generate3x3Scramble(len) {
+            const scramble = [];
+            let lastFace = null, secondLastFace = null;
+            while (scramble.length < len) {
+                const candidate = FACES_3X3[Math.floor(Math.random() * FACES_3X3.length)];
+                if (lastFace && candidate.name === lastFace.name) continue;
+                if (lastFace && secondLastFace && candidate.axis === lastFace.axis && candidate.axis === secondLastFace.axis) continue;
+                const mod = MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)];
+                scramble.push(candidate.name + mod);
+                secondLastFace = lastFace;
+                lastFace = candidate;
+            }
+            return scramble.join(' ');
+        }
+
+        function generate2x2Scramble(len) {
+            const faces = ['U', 'R', 'F'];
+            const scramble = [];
+            let last = null;
+            while (scramble.length < len) {
+                const f = faces[Math.floor(Math.random() * faces.length)];
+                if (f === last) continue;
+                scramble.push(f + MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)]);
+                last = f;
+            }
+            return scramble.join(' ');
+        }
+
+        function generate4x4Scramble(len) {
+            const faces = ['U', 'D', 'L', 'R', 'F', 'B', 'Uw', 'Rw', 'Fw'];
+            const scramble = [];
+            let last = null;
+            while (scramble.length < len) {
+                const f = faces[Math.floor(Math.random() * faces.length)];
+                if (f === last) continue;
+                scramble.push(f + MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)]);
+                last = f;
+            }
+            return scramble.join(' ');
+        }
+
+        function generatePyraminxScramble(len) {
+            const faces = ['U', 'L', 'R', 'B'];
+            const scramble = [];
+            let last = null;
+            while (scramble.length < len) {
+                const f = faces[Math.floor(Math.random() * faces.length)];
+                if (f === last) continue;
+                scramble.push(f + (Math.random() < 0.5 ? '' : "'"));
+                last = f;
+            }
+            ['u', 'l', 'r', 'b'].forEach(tip => {
+                if (Math.random() > 0.4) scramble.push(tip + (Math.random() < 0.5 ? '' : "'"));
+            });
+            return scramble.join(' ');
+        }
+
+        function generateMegaminxScramble(len) {
+            const lines = Math.max(4, Math.floor(len / 10));
+            let res = [];
+            for (let l = 0; l < lines; l++) {
+                let line = [];
+                for (let i = 0; i < 10; i++) {
+                    line.push((i % 2 === 0 ? 'R' : 'D') + (Math.random() < 0.5 ? '++' : '--'));
+                }
+                line.push(Math.random() < 0.5 ? 'U' : "U'");
+                res.push(line.join(' '));
+            }
+            return res.join('\n');
+        }
+
+        function generateScramble() {
+            const puzzle = document.getElementById('puzzle-select').value;
+            const diff = document.getElementById('difficulty-select').value;
+            const len = getScrambleLength(puzzle, diff);
+            let text = "";
+
+            if (puzzle === '2x2') text = generate2x2Scramble(len);
+            else if (puzzle === '4x4') text = generate4x4Scramble(len);
+            else if (puzzle === 'pyra') text = generatePyraminxScramble(len);
+            else if (puzzle === 'mega') text = generateMegaminxScramble(len);
+            else text = generate3x3Scramble(len);
+
+            window.currentScramble = text;
+            const disp = document.getElementById('scramble-display');
+            if (disp) disp.innerText = text;
+        }
+
+        // TIMER KEYBOARD & TOUCH EVENTS
+        document.addEventListener('keydown', (e) => {
+            if (e.code !== 'Space' || e.repeat || isTypingInInput()) return;
+            e.preventDefault();
+
+            if (timerState === 'RUNNING') {
+                stopTimer();
+            } else if (timerState === 'STOPPED') {
+                const inspectionOn = document.getElementById('inspection-toggle')?.checked;
+                if (inspectionOn && timerState !== 'INSPECTION') {
+                    startInspection();
+                } else {
+                    timerState = 'HOLDING';
+                    updateTimerUI();
+                    holdTimeout = setTimeout(() => {
+                        timerState = 'READY';
+                        playBeep(880, 'sine', 0.1);
+                        updateTimerUI();
+                    }, 300);
+                }
+            } else if (timerState === 'INSPECTION') {
+                timerState = 'HOLDING';
+                updateTimerUI();
+                holdTimeout = setTimeout(() => {
+                    timerState = 'READY';
+                    playBeep(880, 'sine', 0.1);
+                    updateTimerUI();
+                }, 300);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code !== 'Space' || isTypingInInput()) return;
+            e.preventDefault();
+
+            if (timerState === 'HOLDING') {
+                clearTimeout(holdTimeout);
+                timerState = 'STOPPED';
+                updateTimerUI();
+            } else if (timerState === 'READY') {
+                if (inspectionInterval) clearInterval(inspectionInterval);
+                startTimer();
+            }
+        });
+
+        function isTypingInInput() {
+            const active = document.activeElement;
+            return active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        }
+
+        function startInspection() {
+            timerState = 'INSPECTION';
+            inspectionTime = 15;
+            const disp = document.getElementById('timer-display');
+            disp.innerText = inspectionTime;
+            playBeep(520, 'sine', 0.1);
+
+            inspectionInterval = setInterval(() => {
+                inspectionTime--;
+                disp.innerText = inspectionTime;
+                if (inspectionTime === 8 || inspectionTime === 12) playBeep(600, 'sine', 0.15);
+                if (inspectionTime <= 0) {
+                    clearInterval(inspectionInterval);
+                    disp.innerText = "DNF";
+                    timerState = 'STOPPED';
+                }
+            }, 1000);
+        }
+
+        function startTimer() {
+            timerState = 'RUNNING';
+            startTime = performance.now();
+            updateTimerUI();
+            document.getElementById('penalty-bar').classList.add('opacity-0');
+
+            timerInterval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                document.getElementById('timer-display').innerText = elapsed.toFixed(2);
+            }, 10);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerState = 'STOPPED';
+            lastSolveTime = parseFloat(((performance.now() - startTime) / 1000).toFixed(2));
+            document.getElementById('timer-display').innerText = lastSolveTime.toFixed(2);
+            document.getElementById('penalty-bar').classList.remove('opacity-0');
+            updateTimerUI();
+
+            const solveRecord = {
+                time: lastSolveTime,
+                penalty: 'NONE',
+                puzzle: document.getElementById('puzzle-select').value,
+                scramble: window.currentScramble,
+                timestamp: Date.now(),
+                sessionId: window.activeSessionId
+            };
+
+            saveSolveRecord(solveRecord);
+
+            const activeSolves = getActiveSessionSolves();
+            const best = getBestSolveTime(activeSolves);
+            if (lastSolveTime <= best) {
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+                showToast("🔥 NEW SESSION PERSONAL BEST!", "success");
+            }
+
+            generateScramble();
+        }
+
+        function updateTimerUI() {
+            const disp = document.getElementById('timer-display');
+            const badge = document.getElementById('timer-status-badge');
+
+            disp.className = "mono-font text-7xl sm:text-8xl md:text-9xl font-extrabold tracking-tighter transition-colors duration-150 ";
+            if (timerState === 'HOLDING') {
+                disp.classList.add('timer-holding');
+                badge.innerText = "HOLD SPACE FOR READY...";
+            } else if (timerState === 'READY') {
+                disp.classList.add('timer-ready');
+                badge.innerText = "RELEASE SPACE TO START!";
+            } else if (timerState === 'RUNNING') {
+                disp.classList.add('timer-running');
+                badge.innerText = "SOLVING... PRESS SPACE TO STOP";
+            } else {
+                disp.classList.add('text-slate-100');
+                badge.innerText = "PRESS & HOLD SPACE OR TOUCH";
+            }
+        }
+
+        function saveSolveRecord(solveObj) {
+            if (!window.userSolves) window.userSolves = [];
+            window.userSolves.unshift(solveObj);
+            saveSolvesToStorage();
+
+            updateStatsDisplay();
+            updateHistoryTable();
+            renderSolveChart();
+            renderSessionCardsGrid();
+        }
+
+        function saveSolvesToStorage() {
+            localStorage.setItem('cubetwist_solves', JSON.stringify(window.userSolves || []));
+        }
+
+        function getBestSolveTime(solvesList) {
+            if (!solvesList || solvesList.length === 0) return Infinity;
+            return Math.min(...solvesList.map(s => s.time));
+        }
+
+        function updateStatsDisplay() {
+            const solves = getActiveSessionSolves();
+            document.getElementById('stat-count').innerText = solves.length;
+
+            if (solves.length === 0) {
+                document.getElementById('stat-best').innerText = "--";
+                document.getElementById('stat-ao5').innerText = "--";
+                document.getElementById('stat-ao12').innerText = "--";
+                document.getElementById('stat-mean').innerText = "--";
+                document.getElementById('recent-solves-list').innerHTML = `<span class="text-xs text-slate-500 italic">No solves recorded yet in "${getActiveSession().name}".</span>`;
+                return;
+            }
+
+            const best = Math.min(...solves.map(s => s.time));
+            document.getElementById('stat-best').innerText = best.toFixed(2) + "s";
+
+            if (solves.length >= 5) {
+                const ao5 = calcAverageOf(solves.slice(0, 5));
+                document.getElementById('stat-ao5').innerText = ao5 ? ao5.toFixed(2) + "s" : "DNF";
+            } else {
+                document.getElementById('stat-ao5').innerText = "--";
+            }
+
+            if (solves.length >= 12) {
+                const ao12 = calcAverageOf(solves.slice(0, 12));
+                document.getElementById('stat-ao12').innerText = ao12 ? ao12.toFixed(2) + "s" : "DNF";
+            } else {
+                document.getElementById('stat-ao12').innerText = "--";
+            }
+
+            const sum = solves.reduce((acc, s) => acc + s.time, 0);
+            document.getElementById('stat-mean').innerText = (sum / solves.length).toFixed(2) + "s";
+
+            const recentContainer = document.getElementById('recent-solves-list');
+            recentContainer.innerHTML = solves.slice(0, 10).map((s, idx) => `
+                <span class="px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono font-bold text-slate-200">
+                    ${s.time.toFixed(2)}s ${s.penalty === '+2' ? '(+2)' : ''}
+                </span>
+            `).join('');
+        }
+
+        function calcAverageOf(solvesArray) {
+            const times = solvesArray.map(s => s.time).sort((a,b) => a - b);
+            times.pop();
+            times.shift();
+            const sum = times.reduce((a,b) => a+b, 0);
+            return sum / times.length;
+        }
+
+        function updateHistoryTable() {
+            const tbody = document.getElementById('solves-table-body');
+            if (!tbody) return;
+
+            const solves = getActiveSessionSolves();
+            tbody.innerHTML = solves.map((s, idx) => {
+                const sess = window.sessions.find(sec => sec.id === s.sessionId) || getActiveSession();
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-3 text-slate-400">${solves.length - idx}</td>
+                        <td class="p-3 font-bold text-cyan-400">${s.time.toFixed(2)}s ${s.penalty === '+2' ? '(+2)' : ''}</td>
+                        <td class="p-3 text-slate-300">${idx <= solves.length - 5 ? (calcAverageOf(solves.slice(idx, idx+5)) || '--') : '--'}</td>
+                        <td class="p-3 text-slate-300">${idx <= solves.length - 12 ? (calcAverageOf(solves.slice(idx, idx+12)) || '--') : '--'}</td>
+                        <td class="p-3 text-slate-400 uppercase">${s.puzzle || '3x3'}</td>
+                        <td class="p-3 text-amber-400 font-medium">${sess ? sess.name : 'Main'}</td>
+                        <td class="p-3 text-slate-400 truncate max-w-xs">${s.scramble || ''}</td>
+                        <td class="p-3 text-slate-500">${new Date(s.timestamp).toLocaleDateString()}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteSolveAt(${idx})" class="text-rose-400 hover:text-rose-300">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAnalyticsView(filterVal) {
+            let filteredSolves = window.userSolves || [];
+            if (filterVal === 'ACTIVE' || !filterVal) {
+                filteredSolves = getActiveSessionSolves();
+            } else if (filterVal !== 'ALL') {
+                filteredSolves = filteredSolves.filter(s => s.sessionId === filterVal);
+            }
+
+            // Calculation analytics
+            if (filteredSolves.length >= 50) {
+                const ao50 = calcAverageOf(filteredSolves.slice(0, 50));
+                document.getElementById('ana-ao50').innerText = ao50 ? ao50.toFixed(2) + 's' : '--';
+            } else {
+                document.getElementById('ana-ao50').innerText = '--';
+            }
+
+            if (filteredSolves.length > 0) {
+                const times = filteredSolves.map(s => s.time);
+                const worst = Math.max(...times);
+                const total = times.reduce((a,b) => a+b, 0);
+                const mean = total / times.length;
+                const variance = times.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / times.length;
+                
+                document.getElementById('ana-worst').innerText = worst.toFixed(2) + 's';
+                document.getElementById('ana-stddev').innerText = Math.sqrt(variance).toFixed(2) + 's';
+                
+                const mins = Math.floor(total / 60);
+                const secs = (total % 60).toFixed(1);
+                document.getElementById('ana-total-time').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            } else {
+                document.getElementById('ana-worst').innerText = '--';
+                document.getElementById('ana-stddev').innerText = '--';
+                document.getElementById('ana-total-time').innerText = '--';
+            }
+
+            renderSolveChart(filteredSolves);
+        }
+
+        function renderSolveChart(customSolves) {
+            const ctx = document.getElementById('solveChart')?.getContext('2d');
+            if (!ctx) return;
+
+            const solves = (customSolves || getActiveSessionSolves()).slice().reverse();
+            const labels = solves.map((_, i) => `#${i + 1}`);
+            const data = solves.map(s => s.time);
+
+            if (window.chartInstance) window.chartInstance.destroy();
+
+            window.chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Solve Time (s)',
+                        data: data,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-400');
+            });
+
+            const activeTab = document.getElementById('tab-' + tabId);
+            const activeNav = document.getElementById('nav-' + tabId);
+
+            if (activeTab) activeTab.classList.remove('hidden');
+            if (activeNav) {
+                activeNav.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
+                activeNav.classList.remove('text-slate-400');
+            }
+
+            if (tabId === 'analytics') renderAnalyticsView('ACTIVE');
+            if (tabId === 'sessions') renderSessionCardsGrid();
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function switchAuthTab(type) {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const loginTab = document.getElementById('auth-tab-login');
+            const regTab = document.getElementById('auth-tab-register');
+
+            if (type === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                loginTab.className = "text-base font-bold text-cyan-400 border-b-2 border-cyan-400 pb-2 px-2 transition";
+                regTab.className = "text-base font-bold text-slate-400 hover:text-slate-200 pb-2 px-2 transition";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                regTab.className = "text-base font-bold text-cyan-400 border-b-2 border-cyan-400 pb-2 px-2 transition";
+                loginTab.className = "text-base font-bold text-slate-400 hover:text-slate-200 pb-2 px-2 transition";
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl text-xs font-bold text-white shadow-xl flex items-center gap-2 transition transform translate-y-2 opacity-0 ${type === 'success' ? 'bg-emerald-600' : 'bg-slate-800 border border-slate-700'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-info-circle'}"></i> ${message}`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function copyScramble() {
+            const text = document.getElementById('scramble-display')?.innerText;
+            if (text) {
+                navigator.clipboard.writeText(text);
+                showToast("Scramble copied to clipboard!");
+            }
+        }
+
+        function copyMyUserId() {
+            const code = document.getElementById('my-user-id-code')?.innerText;
+            if (code) {
+                navigator.clipboard.writeText(code);
+                showToast("User ID copied to clipboard!");
+            }
+        }
+
+        window.onload = function() {
+            renderSessionOptions();
+            const active = getActiveSession();
+            if (active && active.puzzle) {
+                const pSelect = document.getElementById('puzzle-select');
+                if (pSelect) pSelect.value = active.puzzle;
+            }
+            generateScramble();
+            updateStatsDisplay();
+            updateHistoryTable();
+        };
+    </script>
+</body>
+</html>
